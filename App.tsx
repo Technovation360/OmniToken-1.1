@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, Clinic, Cabin, RegistrationForm, Token, AdVideo, ClinicGroup, AppState, Advertiser, Specialty } from './types';
 import { INITIAL_STATE, FIELD_OPTIONS } from './constants';
@@ -62,29 +61,6 @@ const App: React.FC = () => {
       loadUserData();
     }
   }, [currentUser?.id]);
-
-  // 3. Handle Deep Linking for Registration Forms (Render-specific sub-routes)
-  useEffect(() => {
-    const handleRouting = () => {
-      const path = window.location.pathname;
-      if (path.startsWith('/register/')) {
-        const formId = path.split('/register/')[1];
-        if (formId) {
-          // Attempt to find form once state is loaded
-          if (state.forms.length > 0) {
-            const form = state.forms.find(f => f.id === formId);
-            if (form) {
-              setRegistrationView({ formId: form.id, clinicId: form.clinicId });
-            }
-          }
-        }
-      }
-    };
-    
-    if (!isLoading) {
-      handleRouting();
-    }
-  }, [isLoading, state.forms]);
 
   const handleLogin = (user: User) => {
     localStorage.setItem('omnitoken_user', JSON.stringify(user));
@@ -260,13 +236,13 @@ const App: React.FC = () => {
     if (group?.formId) await syncDelete('forms', group.formId);
   };
   
-  const createToken = (patientName: string, patientData: Record<string, string>, clinicId: string, formId?: string) => {
+  const createToken = async (patientName: string, patientData: Record<string, string>, clinicId: string, formId?: string): Promise<Token> => {
     const group = state.groups.find(g => g.formId === formId || g.id === patientData['groupId']);
     const groupId = group?.id;
     const existingGroupTokens = state.tokens.filter(t => t.groupId === groupId);
     const newToken: Token = { id: Math.random().toString(36).substr(2, 9), number: existingGroupTokens.length + 101, tokenInitial: group?.tokenInitial, patientName, patientEmail: patientData['email'], patientData, status: 'WAITING', clinicId, groupId, timestamp: Date.now() };
     setState(prev => ({ ...prev, tokens: [...prev.tokens, newToken] }));
-    syncUpsert('tokens', newToken);
+    await syncUpsert('tokens', newToken);
     return newToken;
   };
 
@@ -339,19 +315,14 @@ const App: React.FC = () => {
       <PatientRegistration 
         form={form} 
         groups={clinicGroups}
-        onSubmit={(name, data) => {
-          const newToken = createToken(name, data, registrationView.clinicId, registrationView.formId);
+        onSubmit={async (name, data) => {
+          const newToken = await createToken(name, data, registrationView.clinicId, registrationView.formId);
           setRegistrationView(null);
-          // Redirect to home or reset URL to root
-          window.history.replaceState({}, '', '/');
           const group = state.groups.find(g => g.formId === form?.id || g.id === data['groupId']);
           const displayToken = `${newToken.tokenInitial ? newToken.tokenInitial + '-' : ''}${newToken.number}`;
           alert(`Success! Your Token for ${group?.name || 'Clinic'} is ${displayToken}`);
         }} 
-        onBack={() => {
-          setRegistrationView(null);
-          window.history.replaceState({}, '', '/');
-        }}
+        onBack={() => setRegistrationView(null)}
       />
     );
   }

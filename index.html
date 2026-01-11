@@ -1,11 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#2563eb" />
-    <!-- Updated to modern non-deprecated tag -->
-    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     
     <title>OmniToken - Enterprise Clinic Queue Management</title>
@@ -45,6 +45,17 @@
         height: 100%;
       }
 
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+      .fw-extrabold { font-weight: 800; }
+      .fw-black { font-weight: 900; }
+      .text-xxs { font-size: 0.65rem; }
+      .tracking-tight { letter-spacing: -0.02em; }
+      
       .btn-primary-pro {
         background-color: var(--primary);
         border: none;
@@ -57,6 +68,36 @@
         font-size: 0.68rem;
         letter-spacing: 0.05em;
       }
+      .btn-primary-pro:hover {
+        background-color: var(--primary-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+      }
+
+      .btn-close-round {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #f1f5f9;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        padding: 0;
+        transition: all 0.2s;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .btn-close-round:hover {
+        background-color: #e2e8f0;
+        color: #1e293b;
+      }
+      .btn-close-round svg {
+        display: block;
+        width: 18px;
+        height: 18px;
+      }
 
       .form-control-pro {
         border-radius: 0.5rem;
@@ -65,7 +106,21 @@
         border: 1px solid #e2e8f0;
         background-color: #ffffff;
       }
+      .form-control-pro:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        outline: none;
+      }
 
+      .card-pro {
+        border: none;
+        border-radius: 1.5rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      }
+
+      .bg-indigo-dark { background-color: var(--brand-blue) !important; }
+
+      /* Split Layout Architecture */
       .split-layout {
         display: flex;
         flex-direction: row;
@@ -81,6 +136,7 @@
         z-index: 1050;
         background: white;
         border-right: 1px solid #e2e8f0;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s ease;
       }
 
       .content-side {
@@ -91,6 +147,7 @@
         flex-direction: column;
       }
 
+      /* Mobile Navigation Overrides */
       @media (max-width: 991px) {
         .branding-side {
           position: fixed;
@@ -98,13 +155,30 @@
           left: 0;
           width: 240px !important;
           transform: translateX(-100%);
+          box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+        }
+        .branding-side.show-mobile-menu {
+          transform: translateX(0);
+        }
+        .mobile-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(15, 23, 42, 0.4);
+          backdrop-filter: blur(2px);
+          z-index: 1040;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.3s ease;
+        }
+        .mobile-overlay.active {
+          opacity: 1;
+          pointer-events: auto;
         }
       }
     </style>
-    <script>
-      // Fallback for process.env in browser
-      window.process = { env: { API_KEY: '' } };
-    </script>
     <script type="importmap">
     {
       "imports": {
@@ -119,7 +193,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Added version query to bypass potential aggressive caching of the entry script -->
-    <script type="module" src="index.js?v=1.1.1"></script>
+    <script type="module" src="index.tsx"></script>
   </body>
 </html>
