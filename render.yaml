@@ -2,7 +2,7 @@ services:
   - type: web
     name: omnitoken-enterprise
     env: static
-    buildCommand: null # No build step required for ESM-based apps
+    buildCommand: "npm install && npm run build"
     staticPublishPath: ./
     headers:
       - path: /*
