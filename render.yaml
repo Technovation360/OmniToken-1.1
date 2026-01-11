@@ -12,6 +12,7 @@ services:
       - type: rewrite
         source: /register/*
         destination: /index.html
+      # Catch-all for SPA routing, ensuring we don't rewrite actual files
       - type: rewrite
-        source: /*
+        source: /((?!.*\..*).*)
         destination: /index.html
