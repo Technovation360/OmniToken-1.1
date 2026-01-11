@@ -1,0 +1,19 @@
+
+{
+  "name": "OmniToken Clinic Management",
+  "short_name": "OmniToken",
+  "description": "Enterprise-grade multi-tenant clinic queue and advertising management.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e3a8a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3063/3063176.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

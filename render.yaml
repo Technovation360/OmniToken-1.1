@@ -1,0 +1,18 @@
+
+services:
+  - type: static
+    name: omnitoken-enterprise
+    env: static
+    buildCommand: null # No build step required for ESM-based apps
+    staticPublishPath: ./
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /register/*
+        destination: /index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html

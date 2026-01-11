@@ -1,0 +1,8 @@
+{
+  "name": "OmniToken Multi-Tenant Clinic Management V1.1",
+  "description": "A comprehensive multi-tenant token system for clinics featuring role-based dashboards, cabin management, dynamic registration forms with QR codes, and a dual-purpose screen display for advertisements and queues.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
