@@ -36,10 +36,14 @@ export const loginWithSupabase = async (email: string, password: string): Promis
       .select('*')
       .eq('email', email)
       .eq('password', password)
-      .single();
+      .maybeSingle(); // Changed from .single() to handle 0 results gracefully
 
-    if (error || !data) {
-      console.error("Login failed:", error?.message);
+    if (error) {
+      console.error("Supabase Query Error:", error.message);
+      return null;
+    }
+
+    if (!data) {
       return null;
     }
 

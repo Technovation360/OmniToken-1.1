@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#2563eb" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     
     <title>OmniToken - Enterprise Clinic Queue Management</title>
@@ -27,172 +27,40 @@
         --sidebar-width: 260px;
       }
 
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        overflow: hidden !important;
-        background-color: var(--bg-main);
-      }
-
-      body {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        color: var(--text-main);
-        -webkit-font-smoothing: antialiased;
-      }
-
-      #root {
-        height: 100%;
-      }
-
-      /* Custom Scrollbar */
+      html, body { height: 100%; margin: 0; padding: 0; overflow: hidden !important; background-color: var(--bg-main); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text-main); -webkit-font-smoothing: antialiased; }
+      #root { height: 100%; }
       ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-      ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
-
-      .fw-extrabold { font-weight: 800; }
-      .fw-black { font-weight: 900; }
-      .text-xxs { font-size: 0.65rem; }
-      .tracking-tight { letter-spacing: -0.02em; }
-      
-      .btn-primary-pro {
-        background-color: var(--primary);
-        border: none;
-        color: white;
-        font-weight: 700;
-        padding: 0.5rem 1rem;
-        border-radius: 0.65rem;
-        transition: all 0.2s;
-        text-transform: uppercase;
-        font-size: 0.68rem;
-        letter-spacing: 0.05em;
-      }
-      .btn-primary-pro:hover {
-        background-color: var(--primary-hover);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-      }
-
-      .btn-close-round {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background-color: #f1f5f9;
-        color: #64748b;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: none;
-        padding: 0;
-        transition: all 0.2s;
-        line-height: 1;
-        cursor: pointer;
-      }
-      .btn-close-round:hover {
-        background-color: #e2e8f0;
-        color: #1e293b;
-      }
-      .btn-close-round svg {
-        display: block;
-        width: 18px;
-        height: 18px;
-      }
-
-      .form-control-pro {
-        border-radius: 0.5rem;
-        padding: 0.4rem 0.6rem;
-        font-size: 0.8rem;
-        border: 1px solid #e2e8f0;
-        background-color: #ffffff;
-      }
-      .form-control-pro:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        outline: none;
-      }
-
-      .card-pro {
-        border: none;
-        border-radius: 1.5rem;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
-      }
-
-      .bg-indigo-dark { background-color: var(--brand-blue) !important; }
-
-      /* Split Layout Architecture */
-      .split-layout {
-        display: flex;
-        flex-direction: row;
-        width: 100vw;
-        height: 100vh;
-      }
-
-      .branding-side {
-        width: var(--sidebar-width);
-        flex-shrink: 0;
-        height: 100%;
-        overflow: hidden;
-        z-index: 1050;
-        background: white;
-        border-right: 1px solid #e2e8f0;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s ease;
-      }
-
-      .content-side {
-        flex-grow: 1;
-        height: 100%;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-      }
-
-      /* Mobile Navigation Overrides */
-      @media (max-width: 991px) {
-        .branding-side {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 240px !important;
-          transform: translateX(-100%);
-          box-shadow: 10px 0 30px rgba(0,0,0,0.1);
-        }
-        .branding-side.show-mobile-menu {
-          transform: translateX(0);
-        }
-        .mobile-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100vh;
-          background: rgba(15, 23, 42, 0.4);
-          backdrop-filter: blur(2px);
-          z-index: 1040;
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.3s ease;
-        }
-        .mobile-overlay.active {
-          opacity: 1;
-          pointer-events: auto;
-        }
-      }
+      .btn-primary-pro { background-color: var(--primary); border: none; color: white; font-weight: 700; padding: 0.5rem 1rem; border-radius: 0.65rem; transition: all 0.2s; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.05em; }
+      .split-layout { display: flex; flex-direction: row; width: 100vw; height: 100vh; }
+      .branding-side { width: var(--sidebar-width); flex-shrink: 0; height: 100%; overflow: hidden; z-index: 1050; background: white; border-right: 1px solid #e2e8f0; }
+      .content-side { flex-grow: 1; height: 100%; overflow: hidden; display: flex; flex-direction: column; }
     </style>
-    <script type="importmap">
-    {
-      "imports": {
-        "react/": "https://esm.sh/react@^19.2.3/",
-        "react": "https://esm.sh/react@^19.2.3",
-        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-        "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
-        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.45.0"
-      }
-    }
+    <script>
+      window.process = { 
+        env: { 
+          // Vite will inject environment variables starting with VITE_
+          API_KEY: import.meta.env?.VITE_GEMINI_API_KEY || ''
+        } 
+      };
     </script>
-  </head>
+  <script type="importmap">
+{
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
+</head>
   <body>
     <div id="root"></div>
-    <script type="module" src="index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>

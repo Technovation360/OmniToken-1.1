@@ -7,7 +7,7 @@ interface Props {
   onUpdateTokenStatus: (id: string, status: Token['status'], cabinId?: string) => void;
   onUpdateToken: (t: Token) => void;
   onDeleteToken: (id: string) => void;
-  onCreateToken: (name: string, data: Record<string, string>, clinicId: string, formId?: string) => Promise<Token>;
+  onCreateToken: (name: string, data: Record<string, string>, clinicId: string, formId?: string) => Token;
   onAssignCabin: (cabinId: string, doctorId: string | undefined) => void;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
@@ -187,23 +187,23 @@ const AssistantDashboard: React.FC<Props> = ({
 
   const handleNoShow = (tokenId: string) => onUpdateTokenStatus(tokenId, 'NO_SHOW');
 
-  const handleSavePatient = async () => {
+  const handleSavePatient = () => {
     if (!pName) return;
     const patientData = { phone: pPhone, age: pAge, gender: pGender, email: pEmail };
     if (editingToken) onUpdateToken({ ...editingToken, patientName: pName, patientData, groupId: pGroupId || editingToken.groupId });
     else {
       const group = state.groups.find(g => g.id === pGroupId);
-      if (group) await onCreateToken(pName, patientData, clinicId, group.formId);
+      if (group) onCreateToken(pName, patientData, clinicId, group.formId);
     }
     setShowEditModal(false); setShowPatientModal(false); setEditingToken(null);
   };
 
-  const handleQuickIssue = async () => {
+  const handleQuickIssue = () => {
     if (!showQuickIssueModal || !quickIssueGroupId) return;
     const group = state.groups.find(g => g.id === quickIssueGroupId);
     if (!group) return;
     const patientData = { phone: showQuickIssueModal.phone, age: showQuickIssueModal.age, gender: showQuickIssueModal.gender, email: showQuickIssueModal.email };
-    const newToken = await onCreateToken(showQuickIssueModal.name, patientData, clinicId, group.formId);
+    const newToken = onCreateToken(showQuickIssueModal.name, patientData, clinicId, group.formId);
     setIssuedToken(newToken);
   };
 
@@ -389,116 +389,310 @@ const AssistantDashboard: React.FC<Props> = ({
           <div className="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
             <h5 className="fw-extrabold text-dark mb-0" style={{ fontSize: '0.9rem' }}>Live Queue</h5>
             <div className="d-flex gap-2">
-              <input type="text" value={queueSearchQuery} onChange={e => setQueueSearchQuery(e.target.value)} placeholder="Search..." className="form-control form-control-pro py-1.5 fw-bold" style={{ fontSize: '0.7rem' }} />
-              <button className="btn btn-primary-pro text-nowrap" onClick={() => { setEditingToken(null); setPGroupId(activeGroupId === 'ALL' ? '' : activeGroupId); setShowPatientModal(true); }}>Manual Entry</button>
+              <input type="text" value={queueSearchQuery} onChange={e => setQueueSearchQuery(e.target.value)} placeholder="Search..." className="form-control form-control-pro py-1.5 fw-bold" style={{ fontSize: '0.7rem', width: '200px' }} />
+              <button className="btn btn-primary-pro" onClick={() => { setEditingToken(null); setPGroupId(activeGroupId === 'ALL' ? '' : activeGroupId); setShowPatientModal(true); }}>Manual Entry</button>
             </div>
           </div>
           <div className="table-responsive">
             <table className="table table-pro align-middle mb-0 w-100" style={{ fontSize: '0.75rem' }}>
-               <thead><tr className="bg-light text-slate-500 uppercase"><th style={{width:'40px'}}></th><th>No.</th><th>Patient</th><th>Issued</th><th>Wait</th><th>Status</th><th className="text-center">Actions</th></tr></thead>
-               <tbody>
-                  {filteredSortedQueue.map(t => {
-                    const isExpanded = expandedTokenId === t.id;
-                    const waitMin = Math.floor((Date.now() - t.timestamp) / 60000);
-                    return (
-                      <React.Fragment key={t.id}>
-                        <tr className={isExpanded ? 'bg-light' : ''}>
-                          <td className="text-center"><button className="btn btn-sm p-0 text-slate-400" onClick={() => setExpandedTokenId(isExpanded ? null : t.id)}>{isExpanded ? '▼' : '▶'}</button></td>
-                          <td className="fw-black text-primary">{t.tokenInitial}-{t.number}</td>
-                          <td className="fw-bold text-dark">{t.patientName}</td>
-                          <td>{formatTime(t.timestamp)}</td>
-                          <td><span className={`badge rounded-pill fw-bold text-xxs ${waitMin > 30 ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success'}`}>{waitMin}m</span></td>
-                          <td><StatusBadge status={t.status} /></td>
-                          <td className="text-center">
-                            <div className="d-flex justify-content-center gap-1">
-                              <IconButton onClick={() => { setEditingToken(t); setShowEditModal(true); }}>📝</IconButton>
-                              <IconButton color="danger" onClick={() => onDeleteToken(t.id)}>🗑️</IconButton>
-                            </div>
-                          </td>
-                        </tr>
-                        {isExpanded && (
-                          <tr className="bg-white border-bottom animate-fade-in"><td colSpan={7} className="p-3"><div className="row g-3"><div className="col-md-3 small"><b>Age:</b> {t.patientData.age}</div><div className="col-md-3 small"><b>Phone:</b> {t.patientData.phone}</div><div className="col-md-3 small"><b>Gender:</b> {t.patientData.gender}</div></div></td></tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-               </tbody>
+              <thead>
+                <tr className="bg-light text-slate-500">
+                  <th style={{ width: '40px' }}></th>
+                  <th>No.</th>
+                  <th>Patient</th>
+                  <th>Issued</th>
+                  <th>Wait</th>
+                  <th>Status</th>
+                  <th className="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSortedQueue.map(t => (
+                  <tr key={t.id}>
+                    <td className="text-center"><button onClick={() => setExpandedTokenId(expandedTokenId === t.id ? null : t.id)} className="btn btn-sm p-0 text-slate-400 border-0 shadow-none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ transform: expandedTokenId === t.id ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s' }}><polyline points="9 18 15 12 9 6"></polyline></svg></button></td>
+                    <td className="fw-black text-primary">{t.tokenInitial ? t.tokenInitial + '-' : ''}{t.number}</td>
+                    <td className="fw-bold text-dark">{t.patientName}</td>
+                    <td>{formatTime(t.timestamp)}</td>
+                    <td><WaitTimeBadge minutes={Math.floor((Date.now() - t.timestamp) / 60000)} /></td>
+                    <td><StatusBadge status={t.status} /></td>
+                    <td className="text-center"><IconButton onClick={() => { setEditingToken(t); setShowEditModal(true); }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></IconButton></td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         </div>
       )}
 
       {activeTab === 'patients' && (
-        <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white animate-fade-in">
-           <div className="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-              <h5 className="fw-extrabold text-dark mb-0" style={{ fontSize: '0.9rem' }}>Patients Register</h5>
-              <input type="text" value={patientSearchQuery} onChange={e => setPatientSearchQuery(e.target.value)} placeholder="Global search..." className="form-control form-control-pro py-1.5 fw-bold" style={{ fontSize: '0.7rem', width: '200px' }} />
-           </div>
-           <div className="table-responsive">
+        <div className="animate-fade-in">
+          <div className="card border-0 shadow-sm rounded-4 bg-white mb-3">
+            <div className="card-body p-3">
+              <div className="row g-2 align-items-end">
+                <div className="col-md-6">
+                  <label className="text-xxs fw-black text-slate-400 mb-1 d-block text-uppercase tracking-widest" style={{ fontSize: '0.6rem' }}>Patient Search</label>
+                  <div className="position-relative">
+                    <span className="position-absolute top-0 start-0 translate-middle-y ms-2 text-slate-400" style={{ fontSize: '0.7rem' }}>🔍</span>
+                    <input 
+                      type="text" 
+                      value={patientSearchQuery} 
+                      onChange={e => setPatientSearchQuery(e.target.value)} 
+                      placeholder="Name, Phone, Email..." 
+                      className="form-control form-control-pro ps-4 py-1.5 fw-bold" 
+                      style={{ fontSize: '0.7rem' }}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-auto ms-auto d-flex align-items-center gap-3">
+                   <div className="text-xxs fw-bold text-slate-300 text-uppercase tracking-widest">{uniquePatients.length} Registered Patients</div>
+                   <button className="btn btn-primary-pro text-nowrap px-4 py-2" onClick={() => { setEditingToken(null); setShowPatientModal(true); }}>
+                     <span className="me-2">+</span> Manual Check-in
+                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+            <div className="card-header bg-white py-3 px-4 border-bottom">
+              <h5 className="mb-0 fw-extrabold text-dark" style={{ fontSize: '0.9rem' }}>Patients Register</h5>
+            </div>
+            <div className="table-responsive">
               <table className="table table-pro table-hover align-middle mb-0 w-100" style={{ fontSize: '0.75rem' }}>
-                 <thead><tr className="bg-light text-slate-500 uppercase"><th className="ps-4 cursor-pointer" onClick={() => requestPatientSort('name')}>Patient Name</th><th className="cursor-pointer" onClick={() => requestPatientSort('age')}>Age</th><th className="cursor-pointer" onClick={() => requestPatientSort('phone')}>Mobile</th><th className="text-center">Quick Token</th><th className="text-center">History</th></tr></thead>
-                 <tbody>
-                    {uniquePatients.map((p, idx) => (
-                      <tr key={idx}>
-                        <td className="ps-4 fw-bold">{p.name}</td>
-                        <td>{p.age}Y</td>
-                        <td className="fw-medium text-slate-600">{p.phone}</td>
-                        <td className="text-center"><button onClick={() => setShowQuickIssueModal(p)} className="btn btn-primary-pro py-1 px-3" style={{fontSize: '0.65rem'}}>Issue</button></td>
-                        <td className="text-center"><button onClick={() => setShowHistoryModal(p)} className="btn btn-light py-1 px-3 border fw-bold" style={{fontSize: '0.65rem'}}>View</button></td>
-                      </tr>
-                    ))}
-                 </tbody>
+                <thead>
+                  <tr className="text-nowrap text-slate-500 bg-light bg-opacity-50">
+                    <th className="ps-4 cursor-pointer hover-bg-slate" onClick={() => requestPatientSort('name')}>
+                       <div className="d-flex align-items-center gap-1">
+                          Patient Name {patientSortConfig?.key === 'name' && (patientSortConfig.direction === 'asc' ? '↑' : '↓')}
+                       </div>
+                    </th>
+                    <th className="px-2 cursor-pointer hover-bg-slate" onClick={() => requestPatientSort('age')}>
+                       <div className="d-flex align-items-center gap-1">
+                          Age {patientSortConfig?.key === 'age' && (patientSortConfig.direction === 'asc' ? '↑' : '↓')}
+                       </div>
+                    </th>
+                    <th className="px-2 cursor-pointer hover-bg-slate" onClick={() => requestPatientSort('gender')}>
+                       <div className="d-flex align-items-center gap-1">
+                          Gender {patientSortConfig?.key === 'gender' && (patientSortConfig.direction === 'asc' ? '↑' : '↓')}
+                       </div>
+                    </th>
+                    <th className="px-2 cursor-pointer hover-bg-slate" onClick={() => requestPatientSort('phone')}>
+                       <div className="d-flex align-items-center gap-1">
+                          Mobile {patientSortConfig?.key === 'phone' && (patientSortConfig.direction === 'asc' ? '↑' : '↓')}
+                       </div>
+                    </th>
+                    <th className="px-2 cursor-pointer hover-bg-slate" onClick={() => requestPatientSort('email')}>
+                       <div className="d-flex align-items-center gap-1">
+                          Email {patientSortConfig?.key === 'email' && (patientSortConfig.direction === 'asc' ? '↑' : '↓')}
+                       </div>
+                    </th>
+                    <th className="text-center px-1">Token</th>
+                    <th className="text-center pe-4">History</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {uniquePatients.map((p, idx) => (
+                    <tr key={idx}>
+                      <td className="ps-4 py-2.5 fw-bold text-dark">{p.name}</td>
+                      <td className="px-2">{p.age}</td>
+                      <td className="px-2">
+                        <span className={`badge rounded-pill px-2 py-1 text-xxs fw-bold ${p.gender === 'Male' ? 'bg-primary bg-opacity-10 text-primary' : 'bg-danger bg-opacity-10 text-danger'}`}>
+                          {p.gender.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-2 fw-bold text-slate-600">{p.phone}</td>
+                      <td className="px-2 text-muted">{p.email}</td>
+                      <td className="text-center px-1">
+                        <button 
+                          className="btn btn-primary-pro py-1 px-3 text-nowrap"
+                          onClick={() => {
+                            setIssuedToken(null);
+                            setQuickIssueGroupId('');
+                            setShowQuickIssueModal(p);
+                          }}
+                          style={{ fontSize: '0.65rem' }}
+                        >
+                          Generate
+                        </button>
+                      </td>
+                      <td className="text-center pe-4">
+                        <button 
+                          className="btn py-1 px-3 text-nowrap fw-bold text-white shadow-none border-0 transition-all hover-shadow"
+                          onClick={() => {
+                            setHistoryFrom(''); setHistoryTill(''); setHistoryDoctor(''); setHistoryStatus('');
+                            setShowHistoryModal({ name: p.name, phone: p.phone });
+                          }}
+                          style={{ fontSize: '0.65rem', backgroundColor: '#10b981' }}
+                        >
+                          Show History
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {uniquePatients.length === 0 && (
+                    <tr><td colSpan={7} className="text-center py-5 text-muted italic">No patients found matching criteria.</td></tr>
+                  )}
+                </tbody>
               </table>
-           </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Modals for Patient Entry, Quick Issue, etc */}
-      {showPatientModal && (
-        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', zIndex: 1100 }}>
-          <div className="bg-white rounded-4 shadow-lg w-100 mx-3 p-4 animate-fade-in" style={{ maxWidth: '400px' }}>
-             <h5 className="fw-black mb-4">Check-in Patient</h5>
-             <div className="mb-3"><label className="text-xxs fw-bold uppercase mb-1 d-block">Wing</label><select className="form-select form-control-pro" value={pGroupId} onChange={e => setPGroupId(e.target.value)}><option value="">Select...</option>{myGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></div>
-             <div className="mb-3"><label className="text-xxs fw-bold uppercase mb-1 d-block">Name</label><input value={pName} onChange={e => setPName(e.target.value)} className="form-control form-control-pro" /></div>
-             <div className="mb-3"><label className="text-xxs fw-bold uppercase mb-1 d-block">Phone</label><input value={pPhone} onChange={e => setPPhone(e.target.value)} className="form-control form-control-pro" /></div>
-             <div className="row g-3 mb-4">
-                <div className="col-6"><label className="text-xxs fw-bold uppercase mb-1 d-block">Age</label><input type="number" value={pAge} onChange={e => setPAge(e.target.value)} className="form-control form-control-pro" /></div>
-                <div className="col-6"><label className="text-xxs fw-bold uppercase mb-1 d-block">Gender</label><select value={pGender} onChange={e => setPGender(e.target.value)} className="form-select form-control-pro"><option value="Male">Male</option><option value="Female">Female</option></select></div>
+      {/* MODALS */}
+      {(showPatientModal || showEditModal) && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(8px)', zIndex: 1100 }}>
+          <div className="bg-white rounded-4 shadow-lg w-100 mx-3 overflow-hidden animate-fade-in" style={{ maxWidth: '480px' }}>
+             <div className="p-4 border-bottom d-flex justify-content-between align-items-center">
+               <h6 className="fw-black mb-0 text-uppercase text-indigo-dark">{editingToken ? "Update Patient" : "New Patient"}</h6>
+               <button onClick={() => { setShowPatientModal(false); setShowEditModal(false); setEditingToken(null); }} className="btn-close-round"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
              </div>
-             <div className="d-flex gap-2"><button onClick={() => setShowPatientModal(false)} className="btn btn-light flex-grow-1 fw-bold py-2 rounded-3 text-uppercase" style={{fontSize:'0.65rem'}}>Cancel</button><button onClick={handleSavePatient} className="btn btn-primary-pro flex-grow-1 fw-bold shadow-sm py-2 rounded-3 text-uppercase" style={{fontSize:'0.65rem'}}>Confirm</button></div>
+             <div className="p-4">
+                <div className="row g-3">
+                   <div className="col-12"><label className="text-xxs fw-bold text-slate-500 mb-1 d-block text-uppercase">Target Wing</label><select className="form-select form-control-pro" value={pGroupId} onChange={e => setPGroupId(e.target.value)}><option value="">Select Wing...</option>{myGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></div>
+                   <div className="col-12"><label className="text-xxs fw-bold text-slate-500 mb-1 d-block text-uppercase">Full Name</label><input value={pName} onChange={e => setPName(e.target.value)} className="form-control form-control-pro" /></div>
+                   <div className="col-md-6"><label className="text-xxs fw-bold text-slate-500 mb-1 d-block text-uppercase">Phone</label><input value={pPhone} onChange={e => setPPhone(e.target.value)} className="form-control form-control-pro" /></div>
+                   <div className="col-md-6"><label className="text-xxs fw-bold text-slate-500 mb-1 d-block text-uppercase">Age</label><input type="number" value={pAge} onChange={e => setPAge(e.target.value)} className="form-control form-control-pro" /></div>
+                </div>
+                <div className="d-flex gap-2 mt-4"><button onClick={() => { setShowPatientModal(false); setShowEditModal(false); setEditingToken(null); }} className="btn btn-light flex-grow-1 fw-bold py-2 rounded-3 text-uppercase border-0 shadow-none">Cancel</button><button onClick={handleSavePatient} className="btn btn-primary-pro flex-grow-1 fw-bold shadow-sm py-2 rounded-3 text-uppercase">Save Patient</button></div>
+             </div>
           </div>
         </div>
       )}
 
       {showQuickIssueModal && (
-        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', zIndex: 1100 }}>
-          <div className="bg-white rounded-4 shadow-lg w-100 mx-3 p-4 animate-fade-in" style={{ maxWidth: '380px' }}>
-            <h6 className="fw-black mb-1 uppercase tracking-widest text-primary">Quick Token</h6>
-            <h4 className="fw-black mb-3">{showQuickIssueModal.name}</h4>
-            {!issuedToken ? (
-              <>
-                <div className="mb-4"><label className="text-xxs fw-black text-slate-500 uppercase mb-1.5 d-block">Select Consultation Wing</label><select className="form-select form-control-pro py-2" value={quickIssueGroupId} onChange={e => setQuickIssueGroupId(e.target.value)} style={{ fontSize: '0.8rem' }}><option value="">Choose...</option>{myGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></div>
-                <div className="d-flex gap-2"><button onClick={() => setShowQuickIssueModal(null)} className="btn btn-light flex-grow-1 fw-bold py-2 rounded-3 text-uppercase" style={{fontSize:'0.65rem'}}>Cancel</button><button onClick={handleQuickIssue} className="btn btn-primary-pro flex-grow-1 fw-bold shadow-sm py-2 rounded-3 text-uppercase" style={{fontSize:'0.65rem'}}>Generate</button></div>
-              </>
-            ) : (
-              <div className="text-center py-3">
-                <div className="h1 mb-1 fw-black text-primary">{issuedToken.tokenInitial}-{issuedToken.number}</div>
-                <p className="small text-muted mb-4">Token added to waitlist.</p>
-                <button onClick={() => { setShowQuickIssueModal(null); setIssuedToken(null); }} className="btn btn-primary-pro w-100 fw-bold py-2.5 rounded-3 text-uppercase">Done</button>
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(8px)', zIndex: 1100 }}>
+          <div className="bg-white rounded-4 shadow-lg w-100 mx-3 overflow-hidden animate-fade-in" style={{ maxWidth: '380px' }}>
+            <div className="px-4 pt-3 pb-2 d-flex justify-content-between align-items-center border-bottom">
+              <h6 className="fw-extrabold mb-0 text-uppercase text-indigo-dark" style={{fontSize:'0.8rem'}}>Quick Issue Token</h6>
+              <button onClick={() => { setShowQuickIssueModal(null); setIssuedToken(null); }} className="btn-close-round"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            <div className="p-3">
+              {!issuedToken ? (
+                <div className="animate-fade-in">
+                  <div className="mb-3 text-center">
+                    <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center fw-black mb-2" style={{ width: '50px', height: '50px', fontSize: '1.2rem' }}>{showQuickIssueModal.name.charAt(0)}</div>
+                    <div className="h6 fw-black text-dark mb-0">{showQuickIssueModal.name}</div>
+                    <div className="text-xxs fw-bold text-muted uppercase tracking-widest">{showQuickIssueModal.phone}</div>
+                    <div className="mt-2 d-flex justify-content-center gap-2">
+                       <span className="badge bg-white fw-bold border px-2 py-1.5 rounded-3" style={{ fontSize: '0.65rem', color: '#059669', borderColor: '#d1fae5' }}>Age: {showQuickIssueModal.age}</span>
+                       <span className="badge bg-white fw-bold border px-2 py-1.5 rounded-3" style={{ fontSize: '0.65rem', color: '#059669', borderColor: '#d1fae5' }}>{showQuickIssueModal.gender}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-3">
+                    <label className="text-xxs fw-black text-slate-500 mb-1.5 d-block text-uppercase tracking-widest">Select Consultation Wing</label>
+                    <select className="form-select form-control-pro py-2" value={quickIssueGroupId} onChange={e => setQuickIssueGroupId(e.target.value)} style={{ fontSize: '0.8rem' }}>
+                      <option value="">Choose a wing...</option>
+                      {state.groups.filter(g => g.clinicId === clinicId).map(g => <option key={g.id} value={g.id}>{g.name} ({g.tokenInitial})</option>)}
+                    </select>
+                  </div>
+                  
+                  <div className="bg-success p-2 rounded-3 mb-1 shadow-sm">
+                    <p className="text-xxs text-white fw-bold mb-0 text-center italic" style={{ fontSize: '0.6rem' }}>
+                      Token will be instantly added to waitlist.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-3 animate-fade-in">
+                  <div className="bg-success bg-opacity-10 text-success p-2 rounded-circle d-inline-flex mb-2 shadow-sm" style={{ width: '56px', height: '56px', alignItems: 'center', justifyItems: 'center', justifyContent: 'center' }}>
+                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </div>
+                  <div className="h6 fw-black text-dark mb-1">Token Issued!</div>
+                  <p className="text-muted small mb-0">Patient: <b>{issuedToken.patientName}</b></p>
+                  <div className="mt-3">
+                    <span className="badge bg-primary px-3 py-2 rounded-3 fw-black text-white shadow-sm" style={{ fontSize: '1.2rem' }}>
+                      {issuedToken.tokenInitial}-{issuedToken.number}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="d-flex gap-2 px-3 pb-3">
+              {!issuedToken ? (
+                <>
+                  <button onClick={() => setShowQuickIssueModal(null)} className="btn btn-light flex-grow-1 fw-bold py-2 rounded-3 text-uppercase border-0 shadow-none" style={{ fontSize: '0.65rem' }}>Cancel</button>
+                  <button onClick={handleQuickIssue} className="btn btn-primary-pro flex-grow-1 fw-bold shadow-sm py-2 rounded-3 text-uppercase" style={{ fontSize: '0.65rem' }}>Confirm</button>
+                </>
+              ) : (
+                <button onClick={() => { setShowQuickIssueModal(null); setIssuedToken(null); }} className="btn btn-primary-pro w-100 fw-bold shadow-sm py-2.5 rounded-3 text-uppercase" style={{ fontSize: '0.75rem' }}>Done</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHistoryModal && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(8px)', zIndex: 1100 }}>
+          <div className="bg-white rounded-4 shadow-lg w-100 mx-3 overflow-hidden animate-fade-in" style={{ maxWidth: '850px', transition: 'max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+            <div className="px-4 pt-4 pb-2 d-flex justify-content-between align-items-center border-bottom">
+              <h6 className="fw-extrabold mb-0 text-uppercase text-indigo-dark" style={{fontSize:'0.8rem'}}>Visit History: {showHistoryModal.name}</h6>
+              <button onClick={() => { setShowHistoryModal(null); }} className="btn-close-round"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            <div className="p-4" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              <div className="animate-fade-in">
+                <div className="col-12">
+                  <div className="card border-0 bg-slate-50 rounded-4 mb-4 overflow-hidden shadow-sm">
+                    <div className="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center cursor-pointer border-bottom" onClick={() => setIsHistoryFilterCollapsed(!isHistoryFilterCollapsed)}>
+                      <span className="text-xxs fw-black text-slate-500 text-uppercase tracking-widest">Advanced Visit Search</span>
+                      <span style={{ transform: isHistoryFilterCollapsed ? 'rotate(0)' : 'rotate(180deg)', transition: 'transform 0.2s' }}>▼</span>
+                    </div>
+                    {!isHistoryFilterCollapsed && (
+                      <div className="card-body p-3 bg-white">
+                        <div className="row g-2">
+                          <div className="col-md-3"><label className="text-xxs fw-bold text-slate-500 mb-1 d-block">From</label><input type="date" value={historyFrom} onChange={e => setHistoryFrom(e.target.value)} className="form-control form-control-pro py-1" /></div>
+                          <div className="col-md-3"><label className="text-xxs fw-bold text-slate-500 mb-1 d-block">Till</label><input type="date" value={historyTill} onChange={e => setHistoryTill(e.target.value)} className="form-control form-control-pro py-1" /></div>
+                          <div className="col-md-3"><label className="text-xxs fw-bold text-slate-500 mb-1 d-block">Doctor</label><select value={historyDoctor} onChange={e => setHistoryDoctor(e.target.value)} className="form-select form-control-pro py-1"><option value="">Any</option>{doctorsInClinic.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</select></div>
+                          <div className="col-md-3"><label className="text-xxs fw-bold text-slate-500 mb-1 d-block">Status</label><select value={historyStatus} onChange={e => setHistoryStatus(e.target.value)} className="form-select form-control-pro py-1"><option value="">Any</option><option value="WAITING">Waiting</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option><option value="NO_SHOW">No Show</option></select></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="table-responsive">
+                    <table className="table table-pro align-middle mb-0 w-100" style={{ fontSize: '0.7rem' }}>
+                      <thead><tr className="bg-light sticky-top" style={{ zIndex: 10 }}><th className="ps-2">Token #</th><th>Group</th><th>Doctor</th><th>Issued Date/Time</th><th className="pe-2 text-center">Status</th></tr></thead>
+                      <tbody>
+                        {patientHistory.map(h => {
+                          const group = state.groups.find(g => g.id === h.groupId);
+                          const doctor = state.users.find(u => u.id === h.doctorId);
+                          return (
+                            <tr key={h.id}>
+                              <td className="ps-2 fw-black text-primary">{h.tokenInitial ? h.tokenInitial + '-' : ''}{h.number}</td>
+                              <td><div className="text-xxs text-muted fw-bold truncate" style={{maxWidth: '120px'}}>{group?.name || '-'}</div></td>
+                              <td><div className="text-xxs text-indigo-dark fw-bold truncate" style={{maxWidth: '120px'}}>{doctor?.name || '-'}</div></td>
+                              <td>{formatDateTime(h.timestamp)}</td>
+                              <td className="pe-2 text-center"><StatusBadge status={h.status} /></td>
+                            </tr>
+                          );
+                        })}
+                        {patientHistory.length === 0 && (<tr><td colSpan={5} className="text-center py-4 text-muted italic">No matching visits found.</td></tr>)}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
+            <div className="d-flex gap-2 px-4 pb-4"><button onClick={() => { setShowHistoryModal(null); }} className="btn btn-primary-pro flex-grow-1 fw-bold shadow-sm py-2 rounded-3 text-uppercase" style={{ fontSize: '0.65rem' }}>Close History Explorer</button></div>
           </div>
         </div>
       )}
 
       <style>{`
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .animate-slide-in { animation: slideIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .table-pro thead th { background-color: #f8fafc; color: #64748b; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; border-top: none; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        .hover-bg-slate:hover { background-color: #f1f5f9; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .animate-pulse { animation: pulse 1s infinite alternate; }
-        @keyframes pulse { from { opacity: 1; } to { opacity: 0.7; } }
+        .table-pro thead th { background-color: #f8fafc; color: #64748b; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; border-top: none; }
+        .table-pro tbody td { border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .hover-shadow:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-1px); }
+        .animate-pulse { animation: pulse-custom 1s infinite; }
+        @keyframes pulse-custom { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+        .scale-up { transform: scale(1.05); }
+        .whitespace-pre-wrap { white-space: pre-wrap; }
       `}</style>
     </div>
   );
@@ -516,18 +710,30 @@ const StatCard = ({ title, value, icon, color }: any) => (
   </div>
 );
 
-const IconButton = ({ children, onClick, color = 'slate-600' }: any) => (
-  <button className={`btn btn-sm btn-light rounded-circle text-${color}`} onClick={onClick} style={{ width: '32px', height: '32px', padding: '0' }}>{children}</button>
-);
+const WaitTimeBadge = ({ minutes }: { minutes: number }) => {
+  const getWaitTimeClasses = (min: number) => {
+    if (min >= 45) return 'bg-danger bg-opacity-10 text-danger';
+    if (min >= 30) return 'bg-warning bg-opacity-10 text-warning';
+    if (min >= 15) return 'bg-primary bg-opacity-10 text-primary';
+    return 'bg-success bg-opacity-10 text-success';
+  };
+  return <span className={`badge rounded-pill ${getWaitTimeClasses(minutes)} fw-bold text-xxs`} style={{ minWidth: '45px' }}>{minutes}m</span>;
+};
 
 const StatusBadge = ({ status }: { status: Token['status'] }) => {
-  const styles: any = {
+  const styles: Record<Token['status'], React.CSSProperties> = {
     WAITING: { color: '#2563eb', background: '#eff6ff' },
     CALLING: { color: '#d97706', background: '#fffbeb' },
     CONSULTING: { color: '#4f46e5', background: '#eef2ff' },
+    COMPLETED: { color: '#059669', background: '#ecfdf5' },
+    CANCELLED: { color: '#dc2626', background: '#fef2f2' },
+    NO_SHOW: { color: '#ea580c', background: '#fff7ed' }
   };
-  const s = styles[status] || { color: '#64748b', background: '#f8fafc' };
-  return <span className="badge rounded-pill px-2 py-1 fw-bold text-xxs text-uppercase" style={{ ...s, border: `1px solid ${s.color}20` }}>{status}</span>;
+  return <span className="badge rounded-pill px-2 py-1 fw-bold text-xxs text-uppercase" style={{ ...styles[status], minWidth: '70px', textAlign: 'center' }}>{status.replace('_', ' ')}</span>;
 };
+
+const IconButton = ({ children, onClick, className, color = 'slate-600' }: any) => (
+  <button className={`btn btn-sm btn-light d-flex align-items-center justify-content-center rounded-circle text-${color} ${className}`} onClick={onClick} style={{ width: '32px', height: '32px', padding: '0' }}>{children}</button>
+);
 
 export default AssistantDashboard;
